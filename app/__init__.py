@@ -7,12 +7,18 @@ app.config['SECRET_KEY'] = "change this to be a more random key"
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://lab5:termin4321@localhost/lab5"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True # added just to suppress a warning
 
+
+# Config Values
+USERNAME = 'lui'
+PASSWORD = 'passcode123'
+
 db = SQLAlchemy(app)
 
 # Flask-Login login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.login_message_category = "info"
 
 app.config.from_object(__name__)
 from app import views
