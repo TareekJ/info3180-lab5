@@ -1,16 +1,12 @@
-"""
-Flask Documentation:     http://flask.pocoo.org/docs/
-Jinja2 Documentation:    http://jinja.pocoo.org/2/documentation/
-Werkzeug Documentation:  http://werkzeug.pocoo.org/documentation/
-This file creates your application.
-"""
-
-from app import app, db, login_manager
+import os
+from app import db,app,allowed_exts
 from flask import render_template, request, redirect, url_for, flash
-from flask_login import login_user, logout_user, current_user, login_required
-from .forms import LoginForm
 from .models import UserProfile
-from werkzeug.security import check_password_hash
+from .forms import NewProfileForm
+from werkzeug.utils import secure_filename
+import datetime
+from sqlalchemy import exc
+
 
 
 ###
@@ -28,74 +24,104 @@ def about():
     """Render the website's about page."""
     return render_template('about.html')
     
+@app.route('/profile', methods=['POST','GET'])
+def profile():
+    ProfileForm = NewProfileForm()
     
-@app.route('/secure-page')
-@login_required
-def secure_page():
-    return render_template('secure_page.html')
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    form = LoginForm()
-    if request.method == "POST" and form.validate_on_submit():
-        # change this to actually validate the entire form submission
-        # and not just one field
-        return redirect(url_for('secure_page'))
-        if form.username.data:
-            # Get the username and password values from the form.
-            username=form.username.data 
-            password=form.password.data
-            # using your model, query database for a user based on the username
-            # and password submitted. Remember you need to compare the password hash.
-            # You will need to import the appropriate function to do so.
-            # Then store the result of that query to a `user` variable so it can be
-            # passed to the login_user() method below.
-            user = UserProfile.query.filter_by(username=username).first()
+    if request.method == 'POST':
+        if ProfileForm.validate_on_submit()==True:
+            try:
             
-            if user is not None and check_password_hash(user.password,password):
-                remember = False
+                firstname = ProfileForm.firstname.data
+                lastname = ProfileForm.lastname.data
+                gender = ProfileForm.gender.data
+                email = ProfileForm.email.data
+                location = ProfileForm.location.data
+                bio = ProfileForm.bio.data
+                created = str(datetime.datetime.now()).split()[0]
                 
-                if 'remember' in request.form:
-                    remember = True
-                    
-                # get user id, load into session
-                login_user(user, remember=remember)
-    
-                # remember to flash a message to the user
-                flash("Login Successful", "success")
-                next_page = request.args.get('next')
-                return redirect(next_page or url_for('home.html'))
+                photo = ProfileForm.photo.data
+                photo_name = secure_filename(photo.filename)
+               
+                user = UserProfile(firstname,lastname,gender,email,location, bio, created, photo_name)
+                
+                db.session.add(user)
+                db.session.commit()
+                
+                photo.save(os.path.join(app.config['UPLOAD_FOLDER'],photo_name))
+                flash('Successfullly added.', 'success')
+                return redirect(url_for('profiles'))
             
-            else:
-                flash('Username or Password is incorrect.','danger')
-            
-    return render_template("login.html", form=form)
-
-
-@app.route('/logout')
-def logout():
-    logout_user()
-    flash("Logout Successful", 'danger')
-    return redirect(url_for('home.html'))
-
+            except Exception as e:
+                db.session.rollback()
+                flash("Internal Error", "danger")
+                return render_template("create_profile.html", ProfileForm = ProfileForm)
+                
+        errors = form_errors(ProfileForm)
+        flash(''.join(error+" " for error in errors),"danger")
+        
+    return render_template("create_profile.html", newProfileForm = ProfileForm)
     
-# user_loader callback. This callback is used to reload the user object from
-# the user ID stored in the session
-@login_manager.user_loader
-def load_user(id):
-    return UserProfile.query.get(int(id))
+    
 
+
+
+
+########################################################################################
+
+
+
+@app.route('/profiles', methods=['GET','POST'])
+def profiles():
+    
+    profiles= UserProfile.query.all()
+    profile=[]
+    
+    for user in profiles:
+        profile.append({"pro_pic": user.photo, "f_name":user.firstname, "l_name":user.lastname, "gender":user.gender, "location":user.location, "email":user.email, "bio":user.bio})
+    
+    return render_template('profiles.html', profile=profile)
+
+
+#######################################################################################
+
+
+@app.route('/profile/<userid>', methods=['GET', 'POST'])
+def userprofile(userid):
+    user = UserProfile.query.filter_by(id=userid).first()
+    if user is None:
+        return redirect(url_for('home'))
+    
+    c_y = int(user.created_on.split("-")[0])
+    c_m = int(user.created_on.split("-")[1])
+    c_d = int(user.created_on.split("-")[2])
+    
+    user.created_on = format_date_joined(c_y,c_m,c_d)
+    
+    return render_template('profile.html', user=user)
+    
 ###
 # The functions below should be applicable to all Flask apps.
 ###
 
+def format_date_joined(yy,mm,dd):
+    return datetime.date(yy,mm,dd).strftime("%8, %d, %Y")
 
-@app.route('/<file_name>.txt')
-def send_text_file(file_name):
-    """Send your static text file."""
-    file_dot_text = file_name + '.txt'
-    return app.send_static_file(file_dot_text)
+def read_file(filename):
+    data= " "
+    
+    with open(filename, "r") as stream:
+        data = stream.read()
+        
+    return data
+
+def form_errors(form):
+    error_list=[]
+    for field, errors in form.errors.items():
+        for error in errors:
+            error_list.append(field+": "+error)
+    return error_list
+
 
 
 @app.after_request
@@ -116,4 +142,4 @@ def page_not_found(error):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port="8080")
+    app.run(debug=True,host="0.0.0.0",port="8080")

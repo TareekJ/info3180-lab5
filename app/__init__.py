@@ -1,24 +1,16 @@
 from flask import Flask
-from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
+from subprocess import call
 
+
+#configuartion uploads
 app = Flask(__name__)
-app.config['SECRET_KEY'] = "change this to be a more random key"
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://lab5:termin4321@localhost/lab5"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True # added just to suppress a warning
-
-
-# Config Values
-USERNAME = 'lui'
-PASSWORD = 'passcode123'
-
+app.config['SECRET_KEY']= "SuperSecretKey"
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://project1:project1@localhost/project1"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config['UPLOAD_FOLDER']= './app/static/photo'
+allowed_exts =["png","jpg","jpeg"]
 db = SQLAlchemy(app)
 
-# Flask-Login login manager
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-login_manager.login_message_category = "info"
 
-app.config.from_object(__name__)
 from app import views

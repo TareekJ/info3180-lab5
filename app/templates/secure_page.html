@@ -1,8 +1,0 @@
-{% extends "base.html" %}
-
-{% block main %}
-  <h1><img src="{{ url_for('static', filename="lock.png") }}" /> Secure Page</h1>
-  {% include 'flash_messages.html' %}
-  <div class="alert alert-info">Good Day, {{ current_user.username }}! This page is a secured, if you are not logged in it is inaccessible to you.</div>
-{% endblock %}
-
