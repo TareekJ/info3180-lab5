@@ -6,7 +6,7 @@ from wtforms.validators import DataRequired, Email
 
 
 
-class NewProfileForm(FlaskForm):
+class NewForm(FlaskForm):
       firstname = StringField('First Name', validators=[DataRequired()])
       lastname = StringField("Last Name", validators=[DataRequired()])
       gender = SelectField("Gender", choices=[("None", "Select Gender"), ("Male", "Male"), ("Female", "Female")], validators=[DataRequired()])

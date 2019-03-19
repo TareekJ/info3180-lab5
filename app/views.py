@@ -2,7 +2,7 @@ import os
 from app import db,app,allowed_exts
 from flask import render_template, request, redirect, url_for, flash
 from .models import UserProfile
-from .forms import NewProfileForm
+from .forms import NewForm
 from werkzeug.utils import secure_filename
 import datetime
 from sqlalchemy import exc
@@ -26,21 +26,21 @@ def about():
     
 @app.route('/profile', methods=['POST','GET'])
 def profile():
-    ProfileForm = NewProfileForm()
+    newProfileForm = NewForm()
     
     if request.method == 'POST':
-        if ProfileForm.validate_on_submit()==True:
+        if newProfileForm.validate_on_submit()==True:
             try:
             
-                firstname = ProfileForm.firstname.data
-                lastname = ProfileForm.lastname.data
-                gender = ProfileForm.gender.data
-                email = ProfileForm.email.data
-                location = ProfileForm.location.data
-                bio = ProfileForm.bio.data
+                firstname = newProfileForm.firstname.data
+                lastname = newProfileForm.lastname.data
+                gender = newProfileForm.gender.data
+                email = newProfileForm.email.data
+                location = newProfileForm.location.data
+                bio = newProfileForm.bio.data
                 created = str(datetime.datetime.now()).split()[0]
                 
-                photo = ProfileForm.photo.data
+                photo = newProfileForm.photo.data
                 photo_name = secure_filename(photo.filename)
                
                 user = UserProfile(firstname,lastname,gender,email,location, bio, created, photo_name)
@@ -55,12 +55,12 @@ def profile():
             except Exception as e:
                 db.session.rollback()
                 flash("Internal Error", "danger")
-                return render_template("create_profile.html", ProfileForm = ProfileForm)
+                return render_template("create_profile.html", newProfileForm = newProfileForm)
                 
-        errors = form_errors(ProfileForm)
+        errors = form_errors(newProfileForm)
         flash(''.join(error+" " for error in errors),"danger")
         
-    return render_template("create_profile.html", newProfileForm = ProfileForm)
+    return render_template("create_profile.html", newProfileForm = newProfileForm)
     
     
 
